@@ -1,0 +1,3 @@
+12951|Mumbai Rajdhani|Mumbai|Delhi|5|1200.000000
+12009|Shatabdi Express|Mumbai|Ahmedabad|4|600.000000
+11301|Udyan Express|Mumbai|Bengaluru|3|900.000000

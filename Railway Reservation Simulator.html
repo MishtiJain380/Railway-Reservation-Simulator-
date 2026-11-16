@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Railway Reservation Simulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#eef1f4;--card:#ffffff;--ink:#142235;--muted:#5d6b7c;--line:#d5dce4;
+  --blue:#14365e;--onblue:#ffffff;--amber:#e8a33d;--ok:#1f7a55;--okbg:#dff2e8;--wait:#8a5a00;--waitbg:#fbecc8;--bad:#a73c30;--badbg:#f6dcd8;
+  --seat:#e3e8ee;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1722;--card:#17212f;--ink:#e6ecf3;--muted:#93a1b3;--line:#2a374a;
+  --blue:#7fb0ea;--onblue:#0f1722;--amber:#f0b95a;--ok:#5fd0a0;--okbg:#17382d;--wait:#f0c26a;--waitbg:#3b2f12;--bad:#f09184;--badbg:#401d19;--seat:#243246;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1722;--card:#17212f;--ink:#e6ecf3;--muted:#93a1b3;--line:#2a374a;
+  --blue:#7fb0ea;--onblue:#0f1722;--amber:#f0b95a;--ok:#5fd0a0;--okbg:#17382d;--wait:#f0c26a;--waitbg:#3b2f12;--bad:#f09184;--badbg:#401d19;--seat:#243246;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;font-weight:700;margin:0;letter-spacing:.01em}
+h1{font-size:2.3rem;line-height:1.1}
+h2{font-size:1.35rem;margin-bottom:10px}
+.sub{color:var(--muted);margin:4px 0 18px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+.tab{flex:0 0 auto;text-align:left;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer;font:inherit}
+.tab b{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:1.15rem;display:block}
+.tab small{color:var(--muted)}
+.tab[aria-pressed="true"]{border-color:var(--blue);background:var(--blue);color:var(--onblue)}
+.tab[aria-pressed="true"] small{color:inherit;opacity:.85}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.coach{border:2px solid var(--blue);border-radius:18px;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
+.seat{height:54px;border-radius:8px 8px 14px 14px;background:var(--seat);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);border-bottom:4px solid var(--line)}
+.seat b{font-size:1rem;color:var(--ink)}
+.seat.taken{background:var(--okbg);border-bottom-color:var(--ok);color:var(--ok)}
+.seat.taken b{color:var(--ok)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-top:10px}
+.queue{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--waitbg);color:var(--wait);font-size:.95rem}
+label{display:block;font-weight:500;margin:10px 0 4px}
+input,select{width:100%;font:inherit;padding:9px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+input:focus,select:focus,button:focus-visible,.tab:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.primary,button.sec{font:inherit;font-weight:600;border-radius:8px;padding:10px 16px;cursor:pointer;border:1.5px solid var(--blue)}
+button.primary{background:var(--blue);color:var(--onblue);width:100%;margin-top:14px}
+button.sec{background:transparent;color:var(--blue)}
+button.danger{font:inherit;font-size:.9rem;border:1.5px solid var(--bad);color:var(--bad);background:transparent;border-radius:6px;padding:3px 10px;cursor:pointer}
+.msg{margin-top:12px;padding:10px 12px;border-radius:8px;display:none}
+.msg.ok{display:block;background:var(--okbg);color:var(--ok)}
+.msg.warn{display:block;background:var(--waitbg);color:var(--wait)}
+.msg.err{display:block;background:var(--badbg);color:var(--bad)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:.9rem}
+.pill{display:inline-block;padding:1px 10px;border-radius:99px;font-size:.85rem;font-weight:600}
+.CONFIRMED{background:var(--okbg);color:var(--ok)}
+.WAITING{background:var(--waitbg);color:var(--wait)}
+.CANCELLED{background:var(--badbg);color:var(--bad)}
+.ticket{border:2px dashed var(--blue);border-radius:12px;padding:12px 14px;margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:2px 14px}
+.ticket span:nth-child(odd){color:var(--muted)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:.85rem;margin:6px 0 0}
+.full{margin-top:16px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+details summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Railway Reservation Simulator</h1>
+  <p class="sub">Book seats, join the waiting list and cancel tickets. Same logic as the C++ project, saved in this browser.</p>
+
+  <div class="tabs" id="tabs" role="group" aria-label="Choose a train"></div>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="seathead">
+      <h2 id="seathead">Seats</h2>
+      <div id="trainInfo" class="sub" style="margin-top:0"></div>
+      <div class="coach" id="coach"></div>
+      <div class="legend"><span>Green: booked</span><span>Grey: free</span></div>
+      <div class="queue" id="queue"></div>
+    </section>
+
+    <section class="card" aria-labelledby="bookhead">
+      <h2 id="bookhead">Book a ticket</h2>
+      <label for="name">Passenger name</label>
+      <input id="name" autocomplete="off" maxlength="40">
+      <div class="row">
+        <div><label for="age">Age</label><input id="age" type="number" min="1" max="120"></div>
+        <div><label for="gender">Gender</label>
+          <select id="gender"><option value="M">Male</option><option value="F">Female</option><option value="O">Other</option></select></div>
+      </div>
+      <label for="cls">Class</label>
+      <select id="cls"><option value="1">Sleeper</option><option value="2">AC (2.5× fare)</option></select>
+      <button class="primary" id="bookBtn">Book ticket</button>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <section class="card full" aria-labelledby="pnrhead">
+    <h2 id="pnrhead">Check PNR status</h2>
+    <div class="row" style="grid-template-columns:1fr auto;align-items:end">
+      <div><label for="pnr" style="margin-top:0">PNR number</label><input id="pnr" inputmode="numeric"></div>
+      <button class="sec" id="pnrBtn" style="padding:10px 18px">Check status</button>
+    </div>
+    <div id="pnrOut"></div>
+  </section>
+
+  <section class="card full" aria-labelledby="allhead">
+    <h2 id="allhead">All tickets</h2>
+    <div class="scroll" id="tickets"></div>
+    <div class="bar">
+      <button class="sec" id="demoBtn">Fill train 11301 for a waiting-list demo</button>
+      <button class="sec" id="resetBtn">Clear all tickets</button>
+    </div>
+  </section>
+
+  <section class="card full">
+    <details>
+      <summary>Data files (same format as the C++ program)</summary>
+      <p class="sub" style="margin:8px 0 0">Copy these into <b>tickets.txt</b> to load the same bookings in your C++ project.</p>
+      <pre id="fileOut"></pre>
+    </details>
+  </section>
+</div>
+
+<script>
+const KEY="rrs_v1";
+const DEF=[
+  {no:12951,name:"Mumbai Rajdhani",from:"Mumbai",to:"Delhi",seats:5,fare:1200},
+  {no:12009,name:"Shatabdi Express",from:"Mumbai",to:"Ahmedabad",seats:4,fare:600},
+  {no:11301,name:"Udyan Express",from:"Mumbai",to:"Bengaluru",seats:3,fare:900}
+];
+let S={trains:DEF,tickets:[],next:1001};
+try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);if(p&&p.trains&&p.tickets)S=p;}}catch(e){}
+let sel=S.trains[0].no;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+const train=no=>S.trains.find(t=>t.no===no);
+const ticket=p=>S.tickets.find(t=>t.pnr===p);
+const fare=t=>train(t.train).fare*(t.cls===2?2.5:1);
+const clsName=c=>c===2?"AC":"Sleeper";
+const confirmed=no=>S.tickets.filter(t=>t.train===no&&t.status==="CONFIRMED");
+const waiting=no=>S.tickets.filter(t=>t.train===no&&t.status==="WAITING").sort((a,b)=>a.pnr-b.pnr); // FIFO queue
+const freeSeat=no=>{const used=new Set(confirmed(no).map(t=>t.seat));for(let i=1;i<=train(no).seats;i++)if(!used.has(i))return i;return 0;};
+
+function say(text,kind){const m=$("msg");m.className="msg "+kind;m.textContent=text;}
+
+function book(){
+  const name=$("name").value.trim().replace(/\|/g,"/"),age=parseInt($("age").value,10);
+  if(!name){say("Enter the passenger’s name.","err");return;}
+  if(!(age>=1&&age<=120)){say("Enter an age between 1 and 120.","err");return;}
+  const t={pnr:S.next++,cls:parseInt($("cls").value,10),name,age,g:$("gender").value,train:sel,seat:0,status:"WAITING"};
+  const seat=freeSeat(sel);
+  if(seat){t.seat=seat;t.status="CONFIRMED";}
+  S.tickets.push(t);save();
+  say(seat?`Ticket confirmed. PNR ${t.pnr}, seat ${seat}.`:`Train is full. PNR ${t.pnr} joined the waiting list at position ${waiting(sel).length}.`,seat?"ok":"warn");
+  $("name").value="";$("age").value="";render();
+}
+
+function cancel(pnr){
+  const t=ticket(pnr);if(!t||t.status==="CANCELLED")return;
+  const wasConfirmed=t.status==="CONFIRMED";
+  t.status="CANCELLED";t.seat=0;
+  let note=`Ticket ${pnr} cancelled.`;
+  if(wasConfirmed){
+    const next=waiting(t.train)[0];           // front of the queue
+    if(next){next.seat=freeSeat(t.train);next.status="CONFIRMED";note+=` ${next.name} (PNR ${next.pnr}) moved from the waiting list to seat ${next.seat}.`;}
+  }
+  save();say(note,"ok");render();
+}
+
+function ticketCard(t){
+  return `<div class="ticket"><span>PNR</span><b>${t.pnr}</b><span>Passenger</span><span>${esc(t.name)} (${t.age}, ${t.g})</span>
+  <span>Train</span><span>${t.train} ${esc(train(t.train).name)}</span><span>Class</span><span>${clsName(t.cls)}</span>
+  <span>Seat</span><span>${t.seat||"Not allotted"}</span><span>Fare</span><span>Rs. ${fare(t).toFixed(2)}</span>
+  <span>Status</span><span><span class="pill ${t.status}">${t.status}</span></span></div>`;
+}
+
+function render(){
+  $("tabs").innerHTML=S.trains.map(t=>`<button class="tab" data-no="${t.no}" aria-pressed="${t.no===sel}"><b>${t.no} ${esc(t.name)}</b><small>${esc(t.from)} to ${esc(t.to)}</small></button>`).join("");
+  const tr=train(sel),conf=confirmed(sel),w=waiting(sel);
+  $("trainInfo").textContent=`${tr.name}: ${tr.seats-conf.length} of ${tr.seats} seats free. Sleeper fare Rs. ${tr.fare.toFixed(2)}.`;
+  let seats="";
+  for(let i=1;i<=tr.seats;i++){const o=conf.find(t=>t.seat===i);
+    seats+=o?`<div class="seat taken" title="${esc(o.name)}"><b>${i}</b>${o.pnr}</div>`:`<div class="seat"><b>${i}</b>free</div>`;}
+  $("coach").innerHTML=seats;
+  $("queue").innerHTML=w.length?`<b>Waiting list (${w.length}):</b> `+w.map((t,i)=>`${i+1}. ${esc(t.name)} (PNR ${t.pnr})`).join(", "):"Waiting list is empty.";
+  $("queue").style.background=w.length?"":"var(--bg)";$("queue").style.color=w.length?"":"var(--muted)";
+  $("tickets").innerHTML=S.tickets.length?`<table><thead><tr><th>PNR</th><th>Passenger</th><th>Train</th><th>Class</th><th>Seat</th><th>Fare</th><th>Status</th><th></th></tr></thead><tbody>`+
+    S.tickets.slice().reverse().map(t=>`<tr><td>${t.pnr}</td><td>${esc(t.name)}</td><td>${t.train}</td><td>${clsName(t.cls)}</td><td>${t.seat||"-"}</td><td>${fare(t).toFixed(2)}</td><td><span class="pill ${t.status}">${t.status}</span></td><td>${t.status==="CANCELLED"?"":`<button class="danger" data-cancel="${t.pnr}">Cancel</button>`}</td></tr>`).join("")+`</tbody></table>`
+    :`<p class="sub" style="margin:0">No tickets yet. Pick a train and book the first one.</p>`;
+  $("fileOut").textContent="# trains.txt\n"+S.trains.map(t=>[t.no,t.name,t.from,t.to,t.seats,t.fare.toFixed(6)].join("|")).join("\n")+
+    "\n\n# tickets.txt\n"+(S.tickets.map(t=>[t.pnr,t.cls,t.name,t.age,t.g,t.train,t.seat,t.status].join("|")).join("\n")||"(empty)");
+}
+
+$("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b){sel=+b.dataset.no;$("msg").className="msg";render();}});
+$("tickets").addEventListener("click",e=>{const b=e.target.closest("[data-cancel]");if(b)cancel(+b.dataset.cancel);});
+$("bookBtn").addEventListener("click",book);
+$("pnrBtn").addEventListener("click",()=>{
+  const t=ticket(parseInt($("pnr").value,10));
+  $("pnrOut").innerHTML=t?ticketCard(t):`<div class="msg err" style="display:block">No ticket found with that PNR. Check the number and try again.</div>`;
+});
+$("demoBtn").addEventListener("click",()=>{
+  const people=[["Amit Sharma",25,"M",1],["Priya Patel",30,"F",2],["Rahul Verma",22,"M",1],["Sneha Rao",28,"F",1]];
+  sel=11301;
+  people.forEach(p=>{const t={pnr:S.next++,cls:p[3],name:p[0],age:p[1],g:p[2],train:11301,seat:0,status:"WAITING"};
+    const s=freeSeat(11301);if(s){t.seat=s;t.status="CONFIRMED";}S.tickets.push(t);});
+  save();say("Added 4 passengers to the Udyan Express (3 seats). The last one is on the waiting list. Cancel a confirmed ticket to see promotion.","warn");render();
+});
+$("resetBtn").addEventListener("click",()=>{if(confirm("Clear all tickets and restart PNR numbering?")){S.tickets=[];S.next=1001;save();$("pnrOut").innerHTML="";say("All tickets cleared.","ok");render();}});
+render();
+</script>
+</body>
+</html>
